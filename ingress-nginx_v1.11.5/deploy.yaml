@@ -458,8 +458,8 @@ spec:
         app.kubernetes.io/part-of: ingress-nginx
         app.kubernetes.io/version: 1.11.5
     spec:
-      hostNetwork: true #使用宿主机网络
-      hostPID: true #使用宿主机Pid
+      hostNetwork: true #使用宿主机网络.
+      hostPID: true #使用宿主机Pid.
       containers:
       - args:
         - /nginx-ingress-controller
