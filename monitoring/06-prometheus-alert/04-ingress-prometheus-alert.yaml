@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prometheus-alert-center
+  namespace: monitoring
+spec:
+  ingressClassName: nginx 
+  rules:
+    - host: alert.moone.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus-alert-center
+                port:
+                  number: 8080
+
