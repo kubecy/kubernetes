@@ -1,0 +1,40 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+  labels:
+    prometheus-name: k8s
+    app: prometheus
+
+data:
+  prometheus.yml: |-
+    global:
+      evaluation_interval: 30s
+      scrape_timeout: 10s
+      scrape_interval: 15s
+      external_labels:
+        prometheus: monitoring/k8s
+        prometheus_replica: $(POD_NAME)
+    rule_files:
+    - /etc/prometheus/rules/prometheus-rulefiles/*.yaml
+
+    alerting:
+      alertmanagers:
+      - scheme: http
+        static_configs:
+        - targets:
+          - "alertmanager-svc.monitoring.svc.cluster.local:9093"
+    scrape_configs:
+    - job_name: 'kubernetes-node'
+      kubernetes_sd_configs:
+      - role: node
+      relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*):10250'
+        replacement: '${1}:9100'
+        target_label: __address__
+        action: replace
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)

@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data-pvc
+  namespace: monitoring
+  labels:
+    app: prometheus
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual     # 强烈建议补充storageClassName，绑定对应PV
+  resources:
+    requests:
+      storage: 5Gi          
+  selector:
+    matchLabels:
+      app: prometheus          # 精准绑定PV
+  volumeName: local-prometheus # 指定volume，强绑定
+  volumeMode: Filesystem 

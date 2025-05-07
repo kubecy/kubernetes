@@ -1,0 +1,19 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: prometheus-svc
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: prometheus
+    app: prometheus
+spec:
+  ports:
+    - name: web
+      protocol: TCP
+      port: 9090
+      targetPort: 9090
+  type: ClusterIP
+  selector:
+    app: prometheus
+

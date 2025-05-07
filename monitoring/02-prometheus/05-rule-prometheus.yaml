@@ -1,0 +1,23 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: prometheus-rulefiles
+  namespace: monitoring
+  labels:
+    prometheus-name: k8s
+    app: prometheus
+
+data:
+  monitoring-prometheus-k8s-rules.yaml: |
+    groups:
+    - name: node-exporter.rules
+      rules: 
+      - alert: 节点内存告警
+        expr: node_memory_MemFree_bytes < 10 * 1024 * 1024 * 1024
+        for: 15s
+        labels:
+          severity: critical
+        annotations:
+          description: "主机可用内存小于10Gi"
+          summary: "主机可用内存小于10Gi"
