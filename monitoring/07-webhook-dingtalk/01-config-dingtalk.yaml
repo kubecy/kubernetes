@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-webhook-dingtalk-config
+  namespace: monitoring
+data:
+  config.yml: |
+    ## Request timeout
+    # timeout: 5s
+
+    ## Customizable templates path
+    templates:
+      - /etc/prometheus-webhook-dingtalk/dingtalk_template.tmpl 
+
+    ## You can also override default template using default_message
+    default_message:
+      title: '{{ template "legacy.title" . }}'
+      text: '{{ template "dingtalk.default.message" . }}'
+
+    ## Targets, previously was known as "profiles"
+    targets:
+      webhook1:
+        url: https://oapi.dingtalk.com/robot/send?access_token=5f7c505d6554e5842ddee5cbee2d6c1eb079ed36bc9bd5e6bc9ffaf1acf6ca68 
+        secret: SECd8d89f4d1e0fadf735bb8030e1306ea9955ce6c178b4083d64d42acad4d6735a 
+#        message:
+#          ## 指定了消息的标题，使用模板 `ding.link.title` 来生成。
+#          title: '{{ template "ding.link.title" . }}'
+#          # 指定了消息的正文内容，使用模板 `ding.link.content` 来生成。
+#          text: '{{ template "ding.link.content" . }}'
+                        
+  dingtalk_template.tmpl: |
+    {{ define "dingtalk.default.message" }}
+    {{- if gt (len .Alerts.Firing) 0 }}
+    {{- range .Alerts }}
+    ### 🚨慕一故障告警
+    - **告警类型**: {{ .Labels.alertname }}
+    - **告警级别**: {{ .Labels.severity }}
+    - **故障描述**: {{ .Annotations.description }}
+    - **故障详情**: {{ .Annotations.summary }}
+    - **故障时间**: {{ (.StartsAt.Add 28800e9).Format "2006-01-02 15:04:05" }}
+    {{- if .Labels.instance }}
+    - **实例信息**: {{ .Labels.instance }}
+    {{- end }}
+    ---
+    {{- end }}
+    {{- end }}
+    
+    {{- if gt (len .Alerts.Resolved) 0 }}
+    {{- range .Alerts }}
+    ### ✅慕一故障恢复
+    - **告警类型**: {{ .Labels.alertname }}
+    - **告警级别**: {{ .Labels.severity }}
+    - **故障描述**: {{ .Annotations.description }}
+    - **故障详情**: {{ .Annotations.summary }}
+    - **故障时间**: {{ (.StartsAt.Add 28800e9).Format "2006-01-02 15:04:05" }}
+    {{- if .Labels.instance }}
+    - **实例信息**: {{ .Labels.instance }}
+    {{- end }}
+    ---
+    {{- end }}
+    {{- end }}
+    {{ end }}
+
