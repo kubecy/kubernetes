@@ -29,7 +29,6 @@ spec:
                     values:
                       - prometheus
               topologyKey: "kubernetes.io/hostname"
-      terminationGracePeriodSeconds: 600
       securityContext:
         runAsUser: 1000
         runAsNonRoot: true
