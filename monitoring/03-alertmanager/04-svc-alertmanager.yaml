@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name:  alertmanager-svc
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  clusterIP: None  
+  selector:
+    app: alertmanager
+  ports:
+    - name: web
+      port: 9093
+      targetPort: web
+    - name: mesh
+      port: 9094
+      targetPort: mesh-tcp

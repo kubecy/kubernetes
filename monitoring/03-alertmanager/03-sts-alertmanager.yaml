@@ -1,0 +1,144 @@
+---
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: alertmanager-main
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      nodeSelector:
+        monitoring: "true"
+      restartPolicy: Always
+      serviceAccountName: monitor-sa
+      securityContext:
+        runAsUser: 1000
+        runAsNonRoot: true
+        fsGroup: 2000
+      containers:
+        - resources:
+            requests:
+              memory: 200Mi
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: web
+              scheme: HTTP
+            initialDelaySeconds: 3
+            timeoutSeconds: 3
+            periodSeconds: 5
+            successThreshold: 1
+            failureThreshold: 10
+          name: alertmanager
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: web
+              scheme: HTTP
+            timeoutSeconds: 3
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 10
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+          ports:
+            - name: web
+              containerPort: 9093
+              protocol: TCP
+            - name: mesh-tcp
+              containerPort: 9094
+              protocol: TCP
+            - name: mesh-udp
+              containerPort: 9094
+              protocol: UDP
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alertmanager/config
+            - name: tmpl-volume
+              readOnly: true
+              mountPath: /etc/alertmanager/config/templates
+            - name: alertmanager-main-db
+              mountPath: /alertmanager
+          image: 'registry.cn-guangzhou.aliyuncs.com/kubecy/monitoring:alertmanager_v0.27.0'
+          args:
+            - '--config.file=/etc/alertmanager/config/alertmanager.yml'
+            - '--storage.path=/alertmanager'
+            - '--data.retention=120h'
+            - '--cluster.listen-address=[$(POD_IP)]:9094'
+            - '--web.listen-address=:9093'
+            - '--web.route-prefix=/'
+            - '--cluster.peer=alertmanager-main-0.alertmanager-svc.monitoring.svc.cluster.local:9094'
+            - '--cluster.peer=alertmanager-main-1.alertmanager-svc.monitoring.svc.cluster.local:9094'
+            - '--cluster.peer=alertmanager-main-2.alertmanager-svc.monitoring.svc.cluster.local:9094'
+            - '--cluster.reconnect-timeout=5m'
+        - resources:
+            limits:
+              cpu: 100m
+              memory: 50Mi
+            requests:
+              cpu: 100m
+              memory: 50Mi
+          name: config-reloader
+          command:
+            - /bin/prometheus-config-reloader
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: SHARD
+              value: '-1'
+          ports:
+            - name: reloader-web
+              containerPort: 8080
+              protocol: TCP
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: config
+              readOnly: true
+              mountPath: /etc/alertmanager/config
+            - name: tmpl-volume
+              readOnly: true
+              mountPath: /etc/alertmanager/config/templates
+          image: 'registry.cn-guangzhou.aliyuncs.com/kubecy/monitoring:prometheus-config-reloader_v0.55.1'
+          args:
+            - '--reload-url=http://localhost:9093/-/reload'
+            - '--watched-dir=/etc/alertmanager/config'
+            - "--watch-interval=3s"
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - alertmanager
+              topologyKey: "kubernetes.io/hostname"
+
+      volumes:
+        - name: config
+          configMap:
+            name: alertmanager-config
+        - name: tmpl-volume
+          configMap:
+            name: alertmanager-tmpl
+        - name: alertmanager-main-db
+          emptyDir: {}
+  serviceName: alertmanager-svc
+
