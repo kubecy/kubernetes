@@ -1,0 +1,22 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: node-exporter
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: exporter
+    app.kubernetes.io/name: node-exporter
+    app.kubernetes.io/part-of: kube-prometheus
+    app.kubernetes.io/version: v1.0.1
+spec:
+  clusterIP: None
+  ports:
+    - name: https
+      protocol: TCP
+      port: 9100
+      targetPort: https
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/component: exporter
+    app.kubernetes.io/name: node-exporter
+    app.kubernetes.io/part-of: kube-prometheus

@@ -1,0 +1,30 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+  namespace: monitoring
+  labels:
+    app: nodeexporter
+spec:
+  selector:
+    matchLabels:
+      app: nodeexporter
+  template:
+    metadata:
+      name: prometheus-node-exporter
+      labels:
+        app: nodeexporter
+    spec:
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+      containers:
+      - image: registry.cn-guangzhou.aliyuncs.com/kubecy/monitoring:node-exporter_v1.9.1
+        name: node-exporter
+        ports:
+        - name: node-exporter
+          containerPort: 9100
+          hostPort: 9100
+      hostNetwork: true
+      hostPID: true
