@@ -1,0 +1,87 @@
+---
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: postgres
+  namespace: devops 
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      nodeSelector:
+        postgresql: "true"
+      containers:
+        - name: postgres
+          image: registry.cn-guangzhou.aliyuncs.com/kubecy/postgresql:14.18-alpine3.21 
+          env:
+          - name: POSTGRES_USER
+            value: "admin"
+          - name: POSTGRES_PASSWORD
+            value: "adminpass"
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: gitlab
+                key: db_user
+          - name: DB_PASS
+            valueFrom:
+              secretKeyRef:
+                name: gitlab
+                key: db_pass
+          - name: DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: gitlab
+                key: db_name
+          - name: DB_EXTENSION
+            value: pg_trgm
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+
+          livenessProbe:
+            exec:
+              command:
+              - pg_isready
+              - -h
+              - localhost
+              - -U
+              - postgres
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+              - pg_isready
+              - -h
+              - localhost
+              - -U
+              - postgres
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: "/var/lib/postgresql/data"
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: '3'
+              memory: 12Gi
+            requests:
+              cpu: 200m
+              memory: 256Mi
+      restartPolicy: Always
+      priorityClassName: system-node-critical
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgresql-data-pvc

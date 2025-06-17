@@ -1,0 +1,21 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gitlab-ingress
+  namespace: devops
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "512m"  
+spec:
+  ingressClassName: nginx  
+  rules:
+  - host: gitlab.moone.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gitlab-svc
+            port:
+              number: 80  

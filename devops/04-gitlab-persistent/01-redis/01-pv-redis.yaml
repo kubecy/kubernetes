@@ -1,0 +1,23 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-redis
+  labels:
+    app: redis
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /mnt/mmban/redis
+    type: DirectoryOrCreate
+  claimRef:
+    kind: PersistentVolumeClaim
+    namespace: devops
+    name: redis-data-pvc
+    apiVersion: v1

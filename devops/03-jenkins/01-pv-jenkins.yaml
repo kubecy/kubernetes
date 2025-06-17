@@ -1,0 +1,23 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-jenkins
+  labels:
+    app: jenkins
+spec:
+  capacity:
+    storage: 5Gi   # 根据业务量，建议预留更大，比如50Gi或以上
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /mnt/mmban/jenkins-data
+    type: DirectoryOrCreate
+  claimRef:
+    kind: PersistentVolumeClaim
+    namespace: devops
+    name: jenkins-data-pvc
+    apiVersion: v1

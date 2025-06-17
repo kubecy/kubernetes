@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgresql-data-pvc
+  namespace: devops
+  labels:
+    app: postgresql
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual     # 强烈建议补充storageClassName，绑定对应PV
+  resources:
+    requests:
+      storage: 5Gi          
+  selector:
+    matchLabels:
+      app: postgresql          # 精准绑定PV
+  volumeName: local-postgresql # 指定volume，强绑定
+  volumeMode: Filesystem
