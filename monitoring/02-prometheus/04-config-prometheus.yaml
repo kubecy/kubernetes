@@ -38,16 +38,3 @@ data:
           action: replace
         - action: labelmap
           regex: __meta_kubernetes_node_label_(.+)
-    - job_name: "test"
-      static_configs:    
-        - targets: ["192.168.1.121:9100"]
-      relabel_configs:
-        - source_labels: [__address__]
-          regex: (.*):9100
-          replacement: ${1}:9200
-          target_label: __address__
-          action: replace
-      #relabel_configs:
-        - regex: "(job)"
-          replacement: "${1}_name"
-          action: labelmap
