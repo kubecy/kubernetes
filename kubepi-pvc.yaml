@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubepi-user
+  namespace: kube-system
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubepi-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: kubepi-user
+    namespace: kube-system
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubepi
+  namespace: kube-system
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: kubepi
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubepi-ingress
+  namespace: kube-system
+spec:
+  ingressClassName: nginx  # ✅ 推荐方式，取代 annotation
+  rules:
+    - host: kubepi.kubecy.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kubepi
+                port:
+                  number: 80
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: kubepi-pv
+spec:
+  capacity:
+    storage: 10Gi  # 你可以根据需要调整存储大小
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce  # 访问模式：ReadWriteOnce表示只能由单个节点挂载
+  persistentVolumeReclaimPolicy: Retain  # 可选项：Retain | Recycle | Delete
+    #  storageClassName: kubepi-pv-claim  # 根据需要选择存储类
+  hostPath:  # 本地磁盘路径示例（仅适用于单节点集群）
+    path: "/mnt/data"
+
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kubepi-pvc
+  namespace: kube-system
+spec:
+  accessModes:
+    - ReadWriteOnce  # 必须匹配 PV 的访问模式
+  resources:
+    requests:
+      storage: 10Gi  # 申请的存储大小，需要与 PV 相匹配
+        # storageClassName: kubepi-pv-claim  # 根据需要选择存储类，通常应与 PV 相匹配
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubepi
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: kubepi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubepi
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubepi
+    spec:
+      containers:
+        - name: kubepi
+          image: registry.cn-guangzhou.aliyuncs.com/kansctl/kubepi-server:v1.6.5
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: kubepi-persistent-storage
+              mountPath: /var/lib/kubepi
+      volumes:
+        - name: kubepi-persistent-storage
+          persistentVolumeClaim:
+            claimName: kubepi-pvc
