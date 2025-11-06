@@ -57,5 +57,5 @@ spec:
       volumes:
         - name: nfs-vol
           hostPath:
-            path: //mnt/nfs-volume  # modify this to specify another path to store nfs share data
+            path: /mnt/nfs-volume  # modify this to specify another path to store nfs share data
             type: DirectoryOrCreate
