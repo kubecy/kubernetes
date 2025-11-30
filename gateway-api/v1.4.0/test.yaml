@@ -46,7 +46,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: demoapp.kubecy.con
+    - host: demoapp.kubecy.com
       http:
         paths:
           - path: /
