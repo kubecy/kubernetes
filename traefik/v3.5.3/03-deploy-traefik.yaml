@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/instance: traefik-traefik
   annotations:
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app.kubernetes.io/name: traefik
@@ -32,6 +32,10 @@ spec:
 
       nodeSelector:
         traefik-proxy: 'true'
+      tolerations:
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoExecute"
       serviceAccountName: traefik
       automountServiceAccountToken: true
       terminationGracePeriodSeconds: 60
