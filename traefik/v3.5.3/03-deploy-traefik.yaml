@@ -36,6 +36,9 @@ spec:
         - key: "node-role.kubernetes.io/control-plane"
           operator: "Exists"
           effect: "NoExecute"
+        - key: "node.kubernetes.io/unschedulable"
+          operator: "Exists"
+          effect: "NoSchedule"
       serviceAccountName: traefik
       automountServiceAccountToken: true
       terminationGracePeriodSeconds: 60
