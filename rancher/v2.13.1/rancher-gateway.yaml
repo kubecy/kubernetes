@@ -1,0 +1,60 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: tls-rancher-ingress
+  namespace: cattle-system
+spec:
+  issuerRef:
+    name: rancher
+    kind: Issuer
+    group: cert-manager.io
+  dnsNames:
+    - rancher.moone.com 
+  secretName: tls-rancher-ingress
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: rancher-gateway
+  namespace: cattle-system
+  annotations:
+    cert-manager.io/issuer: rancher
+    cert-manager.io/issuer-kind: Issuer
+spec:
+  gatewayClassName: traefik
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: rancher.moone.com
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: tls-rancher-ingress
+            namespace: cattle-system
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: rancher-httproute
+  namespace: cattle-system
+spec:
+  parentRefs:
+    - name: rancher-gateway
+      namespace: cattle-system
+  hostnames:
+    - rancher.moone.com
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: "/"          
+      backendRefs:
+        - name: rancher
+          port: 80
+          kind: Service
+
