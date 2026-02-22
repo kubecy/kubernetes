@@ -1,0 +1,92 @@
+# =========================
+# 01. SelfSigned Issuer
+# =========================
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: rollouts-selfsigned
+spec:
+  selfSigned: {}
+
+---
+# =========================
+# 02. Certificate
+# =========================
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: rollouts-cert
+  namespace: argo-rollouts
+spec:
+  secretName: rollouts-tls-secret
+  issuerRef:
+    name: rollouts-selfsigned
+    kind: ClusterIssuer
+  dnsNames:
+  - rollouts.kubecy.com
+
+---
+# =========================
+# 03. Gateway
+# =========================
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: argo-rollouts-gateway
+  namespace: argo-rollouts
+  annotations:
+    cert-manager.io/cluster-issuer: rollouts-selfsigned
+    
+spec:
+  gatewayClassName: traefik
+  listeners:
+
+  # HTTP（可选，用于跳转或调试）
+  - name: http
+    port: 80
+    protocol: HTTP
+    hostname: rollouts.kubecy.com
+    allowedRoutes:
+      namespaces:
+        from: All
+
+  # HTTPS
+  - name: https
+    port: 443
+    protocol: HTTPS
+    hostname: rollouts.kubecy.com
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: rollouts-tls-secret
+    allowedRoutes:
+      namespaces:
+        from: All
+
+---
+# =========================
+# 04. HTTPRoute
+# =========================
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argo-rollouts-route
+  namespace: argo-rollouts
+spec:
+  parentRefs:
+  - name: argo-rollouts-gateway
+    namespace: argo-rollouts
+    sectionName: https
+
+  hostnames:
+  - rollouts.kubecy.com
+
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: argo-rollouts-dashboard
+      port: 3100

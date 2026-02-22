@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-traefik-tls
+  namespace: argocd
+spec:
+  secretName: argocd-traefik-tls
+  dnsNames:
+    - argocd.kubecy.com
+  issuerRef:
+    name: argocd-issuer
+    kind: Issuer
+    group: cert-manager.io
+
